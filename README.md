@@ -1,6 +1,6 @@
-# MT Exam Manager — Enhanced WordPress Plugin
+# Exam Management Plugin
 
-A complete academic exam management system for WordPress, built on custom post types.
+A complete Exam Management Plugin for WordPress, built on custom post types.
 
 ## Features
 
