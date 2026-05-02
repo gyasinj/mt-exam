@@ -1,96 +1,66 @@
 <?php
 /**
- * Plugin Name: Exam Management
- * Plugin URI: https://example.com
- * Description: A WordPress plugin for screening senior developer applicants with custom post types for students, exams, results.
- * Version: 1.0.0
- * Author: Your Name
- * Author URI: https://example.com
- * License: GPL-2.0+
+ * Plugin Name: Exam Management Plugin
+ * Plugin URI:  https://github.com/applab-wp/mt-exam
+ * Description: Exam Management Plugin with students, exams, results, subjects, and term taxonomy.
+ * Version:     1.0.0
+ * Author:      AppLab WP (Enhanced)
+ * License:     GPL-2.0+
+ * Text Domain: mt-exam
+ * Develop By: Ghulam Yaseen
  */
 
-// Define constants
-define( 'EM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
-define( 'EM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+defined( 'ABSPATH' ) || exit;
 
-// Custom Post Types and Taxonomy
-class EM_CPT {
-	public static function init() {
-		add_action( 'init', array( __CLASS__, 'register_cpts' ) );
-		add_action( 'init', array( __CLASS__, 'register_taxonomy' ) );
-	}
+define( 'MT_EXAM_VERSION', '2.0.0' );
+define( 'MT_EXAM_DIR',     plugin_dir_path( __FILE__ ) );
+define( 'MT_EXAM_URL',     plugin_dir_url( __FILE__ ) );
 
-	public static function register_cpts() {
-		// Students CPT
-		register_post_type( 'em_student', array(
-			'labels'       => array(
-				'name'          => 'Students',
-				'singular_name' => 'Student',
-			),
-			'public'       => true,
-			'capability_type' => 'post',
-			'supports'     => array( 'title', 'editor' ),
-			'menu_icon'    => 'dashicons-groups',
-			'show_in_rest' => true,
-		) );
+// ─── Load Modules ────────────────────────────────────────────────────────────
+require_once MT_EXAM_DIR . 'includes/post-types.php';
+require_once MT_EXAM_DIR . 'includes/meta-boxes.php';
+require_once MT_EXAM_DIR . 'includes/ajax.php';
+require_once MT_EXAM_DIR . 'includes/shortcodes.php';
+require_once MT_EXAM_DIR . 'includes/csv-import.php';
+require_once MT_EXAM_DIR . 'includes/reports.php';
+require_once MT_EXAM_DIR . 'includes/term-meta.php';
 
-		// Subjects CPT
-		register_post_type( 'em_subject', array(
-			'labels'       => array(
-				'name'          => 'Subjects',
-				'singular_name' => 'Subject',
-			),
-			'public'       => true,
-			'capability_type' => 'post',
-			'supports'     => array( 'title' ),
-			'menu_icon'    => 'dashicons-book-alt',
-			'show_in_rest' => true,
-		) );
-
-		// Exams CPT
-		register_post_type( 'em_exam', array(
-			'labels'       => array(
-				'name'          => 'Exams',
-				'singular_name' => 'Exam',
-			),
-			'public'       => true,
-			'capability_type' => 'post',
-			'supports'     => array( 'title', 'editor' ),
-			'menu_icon'    => 'dashicons-book',
-			'show_in_rest' => true,
-		) );
-
-		// Results CPT
-		register_post_type( 'em_result', array(
-			'labels'       => array(
-				'name'          => 'Results',
-				'singular_name' => 'Result',
-			),
-			'public'       => true,
-			'capability_type' => 'post',
-			'supports'     => array( 'title' ),
-			'menu_icon'    => 'dashicons-performance',
-			'show_in_rest' => true,
-		) );
-	}
-
-	public static function register_taxonomy() {
-		// Terms Taxonomy
-		register_taxonomy( 'em_term', array( 'em_exam' ), array(
-			'labels'       => array(
-				'name'          => 'Terms',
-				'singular_name' => 'Term',
-			),
-			'public'       => true,
-			'hierarchical' => false,
-			'show_ui'      => true,
-			'show_in_rest' => true,
-		) );
-	}
+// ─── Activation Hook ─────────────────────────────────────────────────────────
+register_activation_hook( __FILE__, 'mt_exam_activate' );
+function mt_exam_activate() {
+    mt_exam_register_post_types();
+    flush_rewrite_rules();
 }
 
-// Initialize plugin
-function em_init() {
-	EM_CPT::init();
+// ─── Enqueue Admin Assets ────────────────────────────────────────────────────
+add_action( 'admin_enqueue_scripts', 'mt_exam_admin_assets' );
+function mt_exam_admin_assets( $hook ) {
+    $cpts = [ 'em_student', 'em_exam', 'em_result', 'em_subject' ];
+    $screen = get_current_screen();
+
+    wp_enqueue_style(
+        'mt-exam-admin',
+        MT_EXAM_URL . 'assets/css/admin.css',
+        [],
+        MT_EXAM_VERSION
+    );
+
+    wp_enqueue_script( 'jquery' );
+
+    // Date-time picker
+    wp_enqueue_script( 'flatpickr', 'https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js', [], null, true );
+    wp_enqueue_style( 'flatpickr', 'https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css', [], null );
+
+    wp_enqueue_script(
+        'mt-exam-admin',
+        MT_EXAM_URL . 'assets/js/admin.js',
+        [ 'jquery', 'flatpickr' ],
+        MT_EXAM_VERSION,
+        true
+    );
+
+    wp_localize_script( 'mt-exam-admin', 'mtExam', [
+        'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+        'nonce'   => wp_create_nonce( 'mt_exam_nonce' ),
+    ] );
 }
-add_action( 'plugins_loaded', 'em_init' );
