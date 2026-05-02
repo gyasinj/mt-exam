@@ -80,9 +80,3 @@ Go to **MT Exam → Student Report**
 ### 8. Top Students Shortcode
 Add `[em_top_students]` to any page or post to display top 3 students per term.
 
-**Optional attributes:**
-```
-[em_top_students top="5" cache="600"]
-```
-- `top` — number of top students to show (default: 3)
-- `cache` — cache duration in seconds (default: 300)
